@@ -2,10 +2,12 @@ package com.octaviocenteno.technicaltest.model.client.transactions;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 
 @Getter
+@Setter
 public class TransactionDetails {
 
     private String type;

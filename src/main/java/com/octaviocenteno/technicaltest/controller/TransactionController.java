@@ -1,50 +1,60 @@
 package com.octaviocenteno.technicaltest.controller;
 
-import com.octaviocenteno.technicaltest.client.OBPTransactionsClient;
-import com.octaviocenteno.technicaltest.mapper.TransactionMapper;
 import com.octaviocenteno.technicaltest.model.rest.Transaction;
+import com.octaviocenteno.technicaltest.model.rest.TransactionsTotal;
+import com.octaviocenteno.technicaltest.service.TransactionService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
-
 
 @RequiredArgsConstructor
-@RequestMapping("transactions")
+@RequestMapping("banks")
 @RestController
 public class TransactionController {
 
-    private final OBPTransactionsClient obpTransactionsClient;
-    private final TransactionMapper transactionMapper;
-    /**
-     * Retrieves the requested transactions
-     * @return
-     */
-    @GetMapping()
-    public List<Transaction> getTransactions(@RequestParam(required = false) String transactionType){
-        return obpTransactionsClient.getTransactions("rbs", "savings-kids-john", "public")
-                        .getTransactions().stream()
-                .filter(obpTransaction -> transactionType == null ||
-                        obpTransaction.getDetails()!=null &&
-                                obpTransaction.getDetails().getType().equals(transactionType))
-                .map(transactionMapper::toTransaction)
-                .collect(Collectors.toList());
+    private final TransactionService transactionService;
+
+    @ApiOperation(value = "Retrieves all public transactions from requested bankId and accountId. Empty array if" +
+            "no transaction was found. Can filter by transactionType")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK response"),
+            @ApiResponse(code = 400, message = "Invalid request"),
+            @ApiResponse(code = 500, message = "Unknown internal error")
+    })
+    @GetMapping("{bankId}/accounts/{accountId}/transactions")
+    public List<Transaction> getTransactions(
+            @ApiParam(value = "Bank id to search the account")
+            @PathVariable(required = false) String bankId,
+            @ApiParam(value = "AccountId to search public transactions")
+            @PathVariable(required = false) String accountId,
+            @ApiParam(required = false, value = "Optional query param to filter transactions by type")
+            @RequestParam(required = false) String transactionType){
+
+        return transactionService.getTransactions(bankId, accountId, transactionType);
     }
 
-    @GetMapping("total")
-    public BigDecimal getTotalAmountByTransactionType(@RequestParam(required = true) String transactionType){
-        return obpTransactionsClient.getTransactions("rbs", "savings-kids-john", "public")
-                .getTransactions().stream()
-                .filter(obpTransaction ->
-                        obpTransaction.getDetails()!=null &&
-                                obpTransaction.getDetails().getType().equals(transactionType))
-                .map(obpTransaction -> obpTransaction.getDetails().getValue().getAmount())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    @ApiOperation(value = "Retrieves all transactions from requested BANK_ID , ACCOUNT_ID and TYPE_ID. Empty array if" +
+            "no transaction was found")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK response"),
+            @ApiResponse(code = 400, message = "Invalid request"),
+            @ApiResponse(code = 500, message = "Unknown internal error")
+    })
+    @GetMapping("{bankId}/accounts/{accountId}/transactions/type/{transactionType}/total")
+    public TransactionsTotal getTotalAmountByTransactionType(
+            @ApiParam(value = "Bank id to search the account")
+            @PathVariable(required = true) String bankId,
+            @ApiParam(value = "AccountId to search public transactions")
+            @PathVariable(required = true) String accountId,
+            @ApiParam(required = true, value = "Required query param to filter transactions by type")
+            @PathVariable(required = true) String transactionType){
+        return transactionService.getTotalAmountByTransactionType(bankId, accountId, transactionType);
+
     }
 
 }
