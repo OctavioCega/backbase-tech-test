@@ -57,4 +57,4 @@ The endpoint will return (if correct credentials) a header:
 
 To consume any endpoint you need to set this header:
 
-"authorization" : "Bearer <token got in login endpoint>"
+"authorization" : "Bearer ```token got in login endpoint```"
